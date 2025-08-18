@@ -8,6 +8,7 @@
 char board[rows][cols];
 int isgameover=0;
 int eaten=1;
+int snake_len=1;
 
 //drew the board
 void draw_board()
@@ -39,6 +40,11 @@ void snake()
 {
     char snake='@';
     board[posx][posy]=snake;
+    int i=1,j=1;
+    for(;i<snake_len;i++,j++)
+    {
+        board[posx-i][posy]='@';
+    }
 }
 
 //print changes in board[][]
@@ -96,12 +102,10 @@ void food()
     if(eaten)
     {
         int max=23,min=1;
-        srand(time(NULL));
         x=(rand()%(max-min+1))+min;
-        srand(time(NULL));
         y=(rand()%(max-min+1))+min;
     }
-    
+    if(x==posx&&y==posy){x=2,y=4;}
     board[x][y]='#';
 }
 void Eaten()
@@ -109,6 +113,8 @@ void Eaten()
     if(posx==x&&posy==y)
     {
         eaten=1;
+        snake_len+=1;
+        
     }
     else
     {
@@ -118,6 +124,7 @@ void Eaten()
 
 int main()
 {   
+    srand(time(NULL));
     
     while(!isgameover)
     {
@@ -127,7 +134,7 @@ int main()
         food();
         print_board();
         input();
-        Eaten();
+        Eaten(); 
         collison();
         clear_screen();
         
