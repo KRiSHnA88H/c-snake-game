@@ -36,15 +36,25 @@ void clear_screen()
 //put the snake head in center
 int posx= 12;
 int posy= 12;
+int a[256][2];
+
 void snake()
 {
     char snake='@';
-    board[posx][posy]=snake;
-    int i=1,j=1;
-    for(;i<snake_len;i++,j++)
+    a[0][0]=posx;
+    a[0][1]=posy;
+    
+    for(int i=snake_len;i>0;i--)
     {
-        board[posx-i][posy]='@';
+        a[i][0]=a[i-1][0];
+        a[i][1]=a[i-1][1];
     }
+    for(int k=snake_len;k>0;k--)
+    {
+        board[a[k][0]][a[k][1]]=snake;
+    }
+    
+
 }
 
 //print changes in board[][]
@@ -74,14 +84,14 @@ void input()
     char m=getch();
     switch (m)
     {
-    case 'W'|'w':
+    case 'w':
         transform(-1,0);
         break;
-    case 'S'|'s':
+    case 's':
         transform(1,0);break;
-    case 'a'|'A':
+    case 'a':
         transform(0,-1);break;
-    case 'd'|'D':
+    case 'd':
         transform(0,1);break;
 
     }
@@ -89,7 +99,7 @@ void input()
 
 void collison()
 {
-    if(posx==rows-1|posx==0|posy==0|posy==cols-1)
+    if(posx==rows-1||posx==0||posy==0||posy==cols-1)
     {
         isgameover=1;
     }
@@ -128,7 +138,7 @@ int main()
     
     while(!isgameover)
     {
-        
+        clear_screen();
         draw_board();
         snake();
         food();
@@ -136,7 +146,7 @@ int main()
         input();
         Eaten(); 
         collison();
-        clear_screen();
+        
         
         
         
