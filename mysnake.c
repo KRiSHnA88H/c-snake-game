@@ -3,183 +3,253 @@
 #include <conio.h>
 #include <time.h>
 #include <windows.h>
-#define cols 25
-#define rows 25
 
-char board[rows][cols];
-int isgameover=0;
-int eaten=1;
-int snake_len=1;
-int dx=1,dy=0;
-//put the snake head in center
-int posx= 12;
-int posy= 12;
-int a[256][2];
+#define ROWS 25
+#define COLS 25
+#define MAX_LEN 256
 
+char board[ROWS][COLS];
+int isgameover = 0;
+int eaten = 1;
+int snake_len = 1;
+int dx = 1, dy = 0;
 
-//drew the board
-void draw_board()
-{
-    for(int i=0;i<cols;i++)
-    {
-        for(int j=0;j<rows;j++)
-        {
-            if(i==0||j==0||i==cols-1||j==rows-1)
-            {
-                board[i][j]='*';
+// snake head position
+int posx = ROWS / 2;
+int posy = COLS / 2;
+
+// snake body coords
+int a[MAX_LEN][2];
+
+// food position
+int foodx, foody;
+
+// timing
+clock_t last = 0;
+int delay = 150; // ms
+
+// draw empty board
+void draw_board() {
+    for (int i = 0; i < ROWS; i++) {
+        for (int j = 0; j < COLS; j++) {
+            if (i == 0 || j == 0 || i == ROWS - 1 || j == COLS - 1) {
+                board[i][j] = '*';
+            } else {
+                board[i][j] = ' ';
             }
+        }
+    }
+}
+
+// snake drawing
+void snake() {
+    // update body coords
+    for (int i = snake_len; i > 0; i--) {
+        a[i][0] = a[i - 1][0];
+        a[i][1] = a[i - 1][1];
+    }
+    a[0][0] = posx;
+    a[0][1] = posy;
+
+    for (int k = 0; k < snake_len; k++) {
+        if (k == 0)
+            board[a[k][0]][a[k][1]] = '@'; // head
+        else
+            board[a[k][0]][a[k][1]] = 'O'; // body
+    }
+}
+
+// print board (buffered)
+void print_board() {
+    fflush(stdout);
+    printf("\033[H"); // move cursor to top-left instead of clearing
+    for (int i = 0; i < ROWS; i++) {
+        for (int j = 0; j < COLS; j++) {
+            if (i == 0 || j == 0 || i == ROWS - 1 || j == COLS - 1)
+            printf("\033[35m%c\033[0m",board[i][j]);
+            else if(i==foodx && j==foody) printf("\033[31m%c\033[0m",board[i][j]);
             else
-            {
-                board[i][j]=' ';
-            }    
+            printf("\033[32m%c\033[0m",board[i][j]);
+            
+            
         }
+       
+
+        printf("%c",'\n');
     }
 }
-void clear_screen()
-{
-    system("cls");
+
+// move snake
+void transform(int x, int y) {
+    posx += x;
+    posy += y;
 }
 
-
-
-void snake()
-{
-    //a--->keeps coordinate of snake body
-    a[0][0]=posx;
-    a[0][1]=posy;
-    char snake='@';
-    char body='O';
-    
-    //updates the new coordintate 
-    for(int i=snake_len;i>0;i--)
-    {
-        a[i][0]=a[i-1][0];
-        a[i][1]=a[i-1][1];
-    }
-    for(int k=snake_len;k>0;k--)
-    {
-        if(k==1)
-        board[a[k][0]][a[k][1]]=snake;
-        else board[a[k][0]][a[k][1]]=body;
-    }
-    
-
-}
-
-//print changes in board[][]
-void print_board()
-{
-    for(int i=0;i<cols;i++)
-    {
-        for(int j=0;j<rows;j++)
-        {
-        printf("%c",board[i][j]);
-        }
-        printf("\n");
-    } 
-    
-}
-
-//changes pos of snake head
-void transform(int x,int y)
-{
-    posx+=x;
-    posy+=y;
-}
-
-//takes input
+// input
 void input() {
-    if(_kbhit()) { // Only process input if key is pressed
-        char m = _getch();
-        switch (m) {
+    if (_kbhit()) {
+        int m = _getch();
+
+        // check if it's an arrow key (two-byte sequence)
+        if (m == 0 || m == 224) {
+            int arrow = _getch(); // read the actual code
+            switch (arrow) {
+            case 72: // Up
+                if (dx != 1 || snake_len == 1) {
+                    dx = -1;
+                    dy = 0;
+                }
+                break;
+            case 80: // Down
+                if (dx != -1 || snake_len == 1) {
+                    dx = 1;
+                    dy = 0;
+                }
+                break;
+            case 75: // Left
+                if (dy != 1 || snake_len == 1) {
+                    dx = 0;
+                    dy = -1;
+                }
+                break;
+            case 77: // Right
+                if (dy != -1 || snake_len == 1) {
+                    dx = 0;
+                    dy = 1;
+                }
+                break;
+            }
+        } else {
+            // WASD controls
+            switch (m) {
             case 'w':
-                if(dx != 1||snake_len==1) { dx = -1; dy = 0; } // Prevent reverse direction
+                if (dx != 1 || snake_len == 1) {
+                    dx = -1;
+                    dy = 0;
+                }
                 break;
             case 's':
-                if(dx != -1||snake_len==1) { dx = 1; dy = 0; }
+                if (dx != -1 || snake_len == 1) {
+                    dx = 1;
+                    dy = 0;
+                }
                 break;
             case 'a':
-                if(dy != 1||snake_len==1) { dx = 0; dy = -1; }
+                if (dy != 1 || snake_len == 1) {
+                    dx = 0;
+                    dy = -1;
+                }
                 break;
             case 'd':
-                if(dy != -1||snake_len==1) { dx = 0; dy = 1; }
+                if (dy != -1 || snake_len == 1) {
+                    dx = 0;
+                    dy = 1;
+                }
                 break;
+            case 'q': // quit
+                isgameover = 1;
+                break;
+            }
         }
     }
 }
 
-void collison()
-{
-    if(posx==rows-1||posx==0||posy==0||posy==cols-1)
-    {
-        isgameover=1;
+
+// check collision
+void collision() {
+    if (posx == ROWS - 1 || posx == 0 || posy == 0 || posy == COLS - 1) {
+        isgameover = 1;
     }
+
+    // check self collision
     for (int i = 1; i < snake_len; i++) {
         if (posx == a[i][0] && posy == a[i][1]) {
             isgameover = 1;
         }
     }
-
-}
-int x,y;
-void food()
-{
-
-    if(eaten)
-    {
-        int max=23,min=1;
-        x=(rand()%(max-min+1))+min;
-        y=(rand()%(max-min+1))+min;
-    }
-    if(x==posx&&y==posy){x=2,y=4;}
-    board[x][y]='#';
-}
-void Eaten()
-{
-    if(posx==x&&posy==y)
-    {
-        eaten=1;
-        snake_len+=1;
-        
-    }
-    else
-    {
-        eaten=0;
-    }
 }
 
-int main()
-{   
-    int difficulty=0;
-    int s=0;
-    printf("Choose Difficulty(1 to 3):\n");
-    scanf("%d",&difficulty);
-    if(difficulty==1) s=200;
-    if (difficulty==2) s=100;
-    if(difficulty==3) s=50;
-    srand(time(NULL));
+// food
+void food() {
+    if (eaten) {
+        int max = ROWS - 2, min = 1;
+        foodx = (rand() % (max - min + 1)) + min;
+        foody = (rand() % (max - min + 1)) + min;
+        eaten = 0;
+    }
+    board[foodx][foody] = '#';
+}
 
-    while(!isgameover)
-    {
-        clear_screen();
-        draw_board();
-        snake();
-        food();
-        transform(dx,dy);
-        print_board();
-        input();
-        Eaten(); 
-        Sleep(s);
-        collison();
-        if(snake_len==255)
-        {
-            printf("You won");
-            return 0;
+// check eaten
+void Eaten() {
+    if (posx == foodx && posy == foody) {
+        eaten = 1;
+        snake_len++;
+        if (snake_len >= MAX_LEN) {
+            printf("You won!\n");
+            exit(0);
         }
-        
     }
-    
-    printf("Game Over");
-    
+}
 
+int main() {
+    int difficulty = 0;
+    srand(time(NULL));
+    printf("========== Snake Game ==========\n");
+    printf("Controls:\n");
+    printf("  Use ARROW KEYS to move the snake\n");
+    printf("     Arrow UP or w : Move Up\n");
+    printf("     Arrow Down or s : Move Down\n");
+    printf("     Arrow Left or a : Move Left\n");
+    printf("     Arrow Right  or d: Move Right\n");
+
+    printf("Choose Difficulty (1 = Easy, 2 = Medium, 3 = Hard): ");
+    if (scanf("%d", &difficulty) != 1) {
+        printf("Invalid input! Defaulting to Medium.\n");
+        difficulty = 2;
+    }
+
+    switch (difficulty) {
+    case 1: delay = 125; break; // Easy
+    case 2: delay = 100; break; // Medium
+    case 3: delay = 50; break;  // Hard
+    default:
+        printf("Invalid choice! Defaulting to Medium.\n");
+        delay = 100;
+        break;
+    }
+    system("cls");
+
+    // hide cursor for clean rendering
+   printf("\033[?25l");
+
+    last = clock();
+
+    // Move cursor to top-left initially
+    printf("\033[H");
+
+    while (!isgameover) {
+        input();
+         
+
+        clock_t now = clock();
+        if ((now - last) * 1000 / CLOCKS_PER_SEC >= delay) {
+            transform(dx, dy);
+            Eaten();
+            collision();
+            last = now;
+            
+
+            draw_board();
+            snake();
+            food();
+            print_board();
+        }
+    }
+
+    // restore cursor
+    printf("\033[?25h");
+
+    printf("Game Over!\n");
+    return 0;
 }
